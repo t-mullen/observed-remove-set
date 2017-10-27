@@ -1,6 +1,6 @@
 {
   "name": "observed-remove-set",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Observed-Remove Set replicated data type.",
   "main": "src/index.js",
   "directories": {
