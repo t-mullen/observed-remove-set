@@ -3,7 +3,7 @@ var inherits = require('inherits')
 
 inherits(OrSet, EventEmitter)
 
-function OrSet (site, opts) {
+function OrSet (site) {
   var self = this
   if (!(self instanceof OrSet)) return new OrSet(site)
 
@@ -132,13 +132,6 @@ OrSet.prototype.size = function () {
   var self = this
 
   return self._elements.size
-}
-
-// O(1)
-OrSet.prototype.clear = function () {
-  var self = this
-
-  return self._elements.clear()
 }
 
 // O(n) : n = number of elements in set
