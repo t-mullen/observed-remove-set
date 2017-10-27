@@ -8,10 +8,6 @@ An "Observed-Remove Set" or "OR-Set", is a set that can be modified concurrently
 var set1 = new OrSet('bob')
 var set2 = new OrSet('alice')
 
-// both sets start with a single a
-set1.add('a') 
-set2.add('a')
-
 // let's provide a "delay" function to simulate concurrency on a network
 function delay (cb) {
   setTimeout(cb, Math.random() * 3000) // 0-3 seconds of delay!
@@ -20,6 +16,10 @@ function delay (cb) {
 // let's "connect" our two sets
 set1.on('op', op => delay(() => set2.receive(op)))
 set2.on('op', op => delay(() => set1.receive(op)))
+
+// both sets start with a single a
+set1.add('a') 
+set2.add('a')
 
 // now below, we introduce a conflict
 set1.add('a')
