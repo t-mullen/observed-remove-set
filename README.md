@@ -23,7 +23,7 @@ set2.on('op', op => delay(() => set1.receive(op)))
 
 // now below, we introduce a conflict
 set1.add('a')
-set2.remove('a')
+set2.delete('a')
 ```
 
 Look at the last two lines. There is a conflict there! Did `set1` delete the `'a'` and re-add it? Or did it add a redundant `'a'` only to delete it soon after? With normal sets, we cannot know and we may end up with `set1 = []` and `set2 = ['a']`.
