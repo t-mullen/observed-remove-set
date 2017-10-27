@@ -1,0 +1,23 @@
+{
+  "name": "observed-remove-set",
+  "version": "1.0.0",
+  "description": "Observed-Remove Set replicated data type.",
+  "main": "src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "standard --fix src/** && tape test/*.js",
+    "build": "browserify src/index.js -s OrSet -o dist/or-set.js"
+  },
+  "author": "Thomas Mullen",
+  "license": "MIT",
+  "devDependencies": {
+    "standard": "^8.6.0",
+    "tape": "^4.6.3"
+  },
+  "dependencies": {
+    "events": "^1.1.1",
+    "inherits": "^2.0.3"
+  }
+}
