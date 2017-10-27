@@ -10,7 +10,7 @@ var set2 = new OrSet('alice')
 
 // let's provide a "delay" function to simulate concurrency on a network
 function delay (cb) {
-  setTimeout(cb, Math.random() * 3000) // 0-3 seconds of delay!
+  setTimeout(cb, 3000) // 3 seconds of delay!
 }
 
 // let's "connect" our two sets
