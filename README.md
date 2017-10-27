@@ -86,4 +86,4 @@ Fires when an element is added to the set by a *remote* operation. (will **not**
 
 ### `orSet.on('delete', function (element) {})`
 
-Fires when an element is added to the set by a *remote* operation. (will **not** fire when `orSet.delete()` is called locally.)
+Fires when an element is removed from the set by a *remote* operation. (will **not** fire when `orSet.delete()` is called locally.)
