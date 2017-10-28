@@ -6,12 +6,12 @@ inherits(OrSet, EventEmitter)
 function OrSet (site, opts) {
   var self = this
   if (!(self instanceof OrSet)) return new OrSet(site, opts)
-  
+
   opts = opts || {}
 
-  self._serialize = opts.serialize || JSON.stringfiy
+  self._serialize = opts.serialize || JSON.stringify
   self._parse = opts.parse || JSON.parse
-  
+
   self._uuids = {}
   self._elements = new Set()
   self._tombstones = {}
