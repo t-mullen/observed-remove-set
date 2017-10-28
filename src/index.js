@@ -64,7 +64,7 @@ OrSet.prototype._remoteAdd = function (e, uuid) {
 
   self._elements.add(e)
 
-  self.emit('add', e)
+  self.emit('add', self._parse(e))
 
   self._garbageCollection(e)
 }
@@ -126,7 +126,7 @@ OrSet.prototype._remoteDelete = function (e, deletedUuids) {
 
   delete self._uuids[e]
   self._elements.delete(e)
-  self.emit('delete', e)
+  self.emit('delete', self._parse(e))
 }
 
 // O(1)
