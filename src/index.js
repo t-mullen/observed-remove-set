@@ -37,6 +37,8 @@ OrSet.prototype.receive = function (op) {
 OrSet.prototype.add = function (e) {
   var self = this
 
+  e = JSON.stringify(e)
+
   var uuid = self._unique()
   self._uuids[e] = self._uuids[e] || []
   self._uuids[e].push(uuid)
@@ -75,6 +77,8 @@ OrSet.prototype._garbageCollection = function (e) {
 // O(1)
 OrSet.prototype.delete = function (e) {
   var self = this
+
+  e = JSON.stringify(e)
 
   if (!self._elements.has(e)) return // can't delete something we don't have
 
@@ -124,6 +128,8 @@ OrSet.prototype._remoteDelete = function (e, deletedUuids) {
 OrSet.prototype.has = function (e) {
   var self = this
 
+  e = JSON.stringify(e)
+
   return self._elements.has(e)
 }
 
@@ -138,14 +144,14 @@ OrSet.prototype.size = function () {
 OrSet.prototype.values = function () {
   var self = this
 
-  return Array.from(self._elements)
+  return Array.from(self._elements).map((e) => JSON.parse(e))
 }
 
 // O(n) : n = number of elements in set
 OrSet.prototype.toString = function (encoding) {
   var self = this
 
-  return Array.from(self._elements).toString()
+  return self.values().toString()
 }
 
 // A - B

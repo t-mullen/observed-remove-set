@@ -29,7 +29,7 @@ var inherits = require('inherits')
 
 inherits(OrSet, EventEmitter)
 
-function OrSet (site, opts) {
+function OrSet (site) {
   var self = this
   if (!(self instanceof OrSet)) return new OrSet(site)
 
@@ -62,6 +62,8 @@ OrSet.prototype.receive = function (op) {
 // O(1)
 OrSet.prototype.add = function (e) {
   var self = this
+
+  e = JSON.stringify(e)
 
   var uuid = self._unique()
   self._uuids[e] = self._uuids[e] || []
@@ -101,6 +103,8 @@ OrSet.prototype._garbageCollection = function (e) {
 // O(1)
 OrSet.prototype.delete = function (e) {
   var self = this
+
+  e = JSON.stringify(e)
 
   if (!self._elements.has(e)) return // can't delete something we don't have
 
@@ -150,6 +154,8 @@ OrSet.prototype._remoteDelete = function (e, deletedUuids) {
 OrSet.prototype.has = function (e) {
   var self = this
 
+  e = JSON.stringify(e)
+
   return self._elements.has(e)
 }
 
@@ -160,25 +166,18 @@ OrSet.prototype.size = function () {
   return self._elements.size
 }
 
-// O(1)
-OrSet.prototype.clear = function () {
-  var self = this
-
-  return self._elements.clear()
-}
-
 // O(n) : n = number of elements in set
 OrSet.prototype.values = function () {
   var self = this
 
-  return Array.from(self._elements)
+  return Array.from(self._elements).map((e) => JSON.parse(e))
 }
 
 // O(n) : n = number of elements in set
 OrSet.prototype.toString = function (encoding) {
   var self = this
 
-  return Array.from(self._elements).toString()
+  return self.values().toString()
 }
 
 // A - B
