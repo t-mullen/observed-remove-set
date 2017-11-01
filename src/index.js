@@ -156,7 +156,7 @@ OrSet.prototype.values = function () {
 OrSet.prototype.toString = function (encoding) {
   var self = this
 
-  return self.values().toString()
+  return self._serialize(self.values())
 }
 
 // A - B

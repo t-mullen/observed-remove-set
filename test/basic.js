@@ -11,6 +11,29 @@ test('test intersection', function (t) {
   t.end()
 })
 
+test('test toString', function (t) {
+  var set1 = OrSet('1')
+  
+  set1.add('a')
+  set1.add('b')
+  set1.add('c')
+
+  var expected = ['a', 'b', 'c']
+  
+  t.equal(set1.toString(), JSON.stringify(expected), 'string matches expected')
+  t.end()
+
+})
+
+test('test has', function (t) {
+  var set1 = OrSet('1')
+
+  set1.add('a')
+
+  t.assert(set1.has('a'), 'has returns true')
+  t.end()
+})
+
 test('test add', function (t) {
   var set1 = OrSet('1')
   var set2 = OrSet('2')
@@ -128,12 +151,14 @@ test('test concurrent early delete (add not received)', function (t) {
   
   set1.on('op', op => op1.push(op))
   set2.on('op', op => op2.push(op))
-  set3.on('op', op => op3.push(op))
+  // set3.on('op', op => op3.push(op))
   
   set1.add('a')             // 1 adds
   set2.receive(op1[0])      // 2 receives add
   set2.delete('a')          // 2 deletes
+  set1.delete('a')          // 1 also deletes
   set3.receive(op2[0])      // 3 receives delete before add
+  set3.receive(op1[1])      // 3 receives ANOTHER delete before add
   set3.receive(op1[0])      // 3 finally receives add (and integrates past delete via tombstone)
   set1.receive(op2[0])      // 1 receives delete
 
