@@ -17,7 +17,7 @@
     "tape": "^4.6.3"
   },
   "dependencies": {
-    "events": "^1.1.1",
-    "inherits": "^2.0.3"
+    "inherits": "^2.0.3",
+    "nanobus": "^4.3.3"
   }
 }

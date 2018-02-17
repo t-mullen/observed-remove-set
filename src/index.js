@@ -1,4 +1,4 @@
-var EventEmitter = require('events').EventEmitter
+var EventEmitter = require('nanobus')
 var inherits = require('inherits')
 
 inherits(OrSet, EventEmitter)
@@ -6,6 +6,8 @@ inherits(OrSet, EventEmitter)
 function OrSet (site, opts) {
   var self = this
   if (!(self instanceof OrSet)) return new OrSet(site, opts)
+
+  EventEmitter.call(this)
 
   opts = opts || {}
 
