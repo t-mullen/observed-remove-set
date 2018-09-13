@@ -255,6 +255,35 @@ test('test more-than-once delivery', function (t) {
   t.end()
 })
 
+test('test state transfer', function (t) {
+  var set1 = OrSet('1')
+  var set2 = OrSet('2')
+  
+  set1.on('op', op => set2.receive(op))
+  set2.on('op', op => set1.receive(op))
+
+  set1.add('a')
+  set1.add('b')
+  set1.delete('b')
+  
+  set2.add('a')
+  set2.delete('a')
+  set2.add('d')
+
+  var set3 = OrSet('3', { state: set1.getState() })
+  t.deepEquals(set1.values(), set3.values())
+
+  set3.on('op', op => set2.receive(op))
+  set3.on('op', op => set1.receive(op))
+  set2.on('op', op => set3.receive(op))
+  set3.add('x')
+  set2.add('g')
+  t.deepEquals(set2.values(), set3.values())
+  t.deepEquals(set2.values(), set1.values())
+
+  t.end()
+})
+
 test('test random operations and delays', function (t) {
   var set1 = OrSet('1')
   var set2 = OrSet('2')

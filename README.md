@@ -44,11 +44,20 @@ npm install observed-remove-set
 
 ## api
 
-### `orSet = new OrSet(uuid)`
+### `orSet = new OrSet(uuid, [opts])`
 
 Create a new OR-Set.
 
 Required `uuid` is some universally unique identifer for this set.
+
+Optional `opts` defaults to the following object:
+```javascript
+{
+  state: null, // an initial state from getState()
+  serialize: JSON.serialize, // function used to internally serialize elements
+  parse: JSON.parse // function used to internally parse elements
+}
+```
 
 ### `orSet.add(element)`
 
@@ -89,3 +98,11 @@ Fires when an element is added to the set by a *remote* operation. (will **not**
 ### `orSet.on('delete', function (element) {})`
 
 Fires when an element is removed from the set by a *remote* operation. (will **not** fire when `orSet.delete()` is called locally.)
+
+### `orSet.getState()`
+
+Get the underlying state of the CRDT. Can be used to transfer state to peers that are just joining and have missed operations. Keep in mind that operations can be sent while transfering state and a 2-step sync is required.
+
+### `orSet.setState(state)`
+
+Set the underlying state of the CRDT. Equivalent to passing state into the constructor.
