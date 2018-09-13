@@ -372,6 +372,27 @@ function OrSet (site, opts) {
 
   self._site = site
   self._counter = 0
+
+  if (opts.state) self.setState(opts.state)
+}
+
+OrSet.prototype.setState = function (state) {
+  var self = this
+
+  var parsed = self._parse(state)
+  self._references = parsed.references
+  self._tombstones = parsed.tombstones
+  self._causality = parsed.causality
+}
+
+OrSet.prototype.getState = function () {
+  var self = this
+
+  return self._serialize({
+    references: self._references,
+    tombstones: self._tombstones,
+    causality: self._causality
+  })
 }
 
 OrSet.prototype._unique = function () {
