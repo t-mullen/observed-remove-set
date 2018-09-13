@@ -506,11 +506,11 @@ OrSet.prototype._remoteDelete = function (element, deletedReferences) {
     return
   }
 
-  var tombstones = OrSet._intersection(deletedReferences, self._references[element])
+  var tombstones = OrSet._difference(deletedReferences, self._references[element])
   self._addTombstones(element, tombstones)
 
   // remove all pairs that the remote replica has seen
-  self._references[element] = OrSet._intersection(self._references[element], deletedReferences)
+  self._references[element] = OrSet._difference(self._references[element], deletedReferences)
   if (self._references[element].length > 0) return // element is still there
 
   delete self._references[element]
@@ -549,7 +549,7 @@ OrSet.prototype.toString = function () {
 
 // A - B
 // O(mn)
-OrSet._intersection = function (a, b) {
+OrSet._difference = function (a, b) {
   return a.filter((ae) => {
     return !b.some((be) => {
       return ae[0] === be[0] && ae[1] === be[1]

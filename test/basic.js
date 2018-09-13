@@ -1,13 +1,13 @@
 var test = require('tape')
 var OrSet = require('./../')
 
-test('test intersection', function (t) {
+test('test difference', function (t) {
   var set1 = [[1,2], [3,2], [1, 1], [5, 1]]
   var set2 = [[1,2], [2,3], [1, 1]]
   
-  var intersection = OrSet._intersection(set1, set2)
+  var difference = OrSet._difference(set1, set2)
   
-  t.deepEquals(intersection, [[3, 2], [5, 1]])
+  t.deepEquals(difference, [[3, 2], [5, 1]])
   t.end()
 })
 
@@ -40,7 +40,7 @@ test('test add', function (t) {
   
   set1.on('op', op => set2.receive(op))
   set2.on('op', op => set1.receive(op))
-  
+
   set1.add('a')
   set2.add('b')
   set1.add('b')
