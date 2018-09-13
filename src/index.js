@@ -101,7 +101,7 @@ OrSet.prototype._remoteAdd = function (element, uuid) {
   self._references[element] = self._references[element] || []
   self._references[element].push(uuid)
 
-  self.emit('add', self._parse(element))
+  if (self._references[element].length === 1) self.emit('add', self._parse(element))
 
   self._garbageCollection(element)
 }
