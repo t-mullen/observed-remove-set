@@ -2,6 +2,8 @@
 
 An "Observed-Remove Set" or "OR-Set", is a set that can be modified concurrently and will eventually reach the same state everywhere (it is "eventually consistent").
 
+A casuality-tracking method is also included, allowing operations to be delivered in any order and more-than-once.
+
 ## example
 
 ```javascript
@@ -28,7 +30,7 @@ set2.delete('a')
 
 Look at the last two lines. There is a conflict there! Did `set1` delete the `'a'` and re-add it? Or did it add a redundant `'a'` only to delete it soon after? With normal sets, we cannot know and we may end up with `set1 = []` and `set2 = ['a']`.
 
-However, these are **OR-Sets** and have eventual consistentcy. Therefore we can be *certain* that `set1 = set2`. We can't predict the end state, but we are guaranteed that all connected sets will reach the same state at the end of our operations.
+However, these are **OR-Sets** and have eventual consistency. Therefore we can be *certain* that `set1 = set2`. We can't predict the end state, but we are guaranteed that all connected sets will reach the same state at the end of our operations.
 
 ## install
 
