@@ -4,6 +4,8 @@ An "Observed-Remove Set" or "OR-Set", is a set that can be modified concurrently
 
 A casuality-tracking method is also included, allowing operations to be delivered in any order and more-than-once.
 
+Also see [observed-remove-map](https://github.com/RationalCoding/observed-remove-map), which is built on top of this module.
+
 ## example
 
 ```javascript
