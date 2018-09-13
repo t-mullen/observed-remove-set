@@ -76,7 +76,7 @@ Receive an operation from a remote set. Must be called exactly once per remote o
 
 ### `orSet.on('op', function (op) {})`
 
-Fires when an operation needs to be sent to connected sets. Operations should be delivered in the order they are emitted and must be delivered exactly once.
+Fires when an operation needs to be sent to connected sets. Operations can be delivered in any order but should be delivered at least once.
 
 `op` is the operation object that needs to be passed into `otherOrSet.receive(op)` for all other replicas.
 

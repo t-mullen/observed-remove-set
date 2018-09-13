@@ -172,6 +172,88 @@ test('test concurrent early delete (add not received)', function (t) {
   t.end()
 })
 
+test('test out-of-order delivery', function (t) {
+  var set1 = OrSet('1')
+  var set2 = OrSet('2')
+  
+  var op1 = []
+  var op2 = []
+  
+  set1.on('op', op => {
+    op1.push(op)
+  })
+  set2.on('op', op => {
+    op2.push(op)
+  })
+  
+  set1.add('a')
+  set1.add('b')
+  set1.delete('b')
+  
+  set2.add('a')
+  set2.delete('a')
+  set2.add('d')
+
+  set1.receive(op2.pop())
+  set1.receive(op2.pop())
+  set1.receive(op2.pop())
+  set2.receive(op1.pop())
+  set2.receive(op1.pop())
+  set2.receive(op1.pop())
+
+  t.assert(set1.values().indexOf('a') !== -1, 'a in set1')
+  t.assert(set2.values().indexOf('a') !== -1, 'a in set2')
+  
+  t.equals(set1.size(), 2)
+  t.equals(set2.size(), 2)
+  t.end()
+})
+
+
+test('test more-than-once delivery', function (t) {
+  var set1 = OrSet('1')
+  var set2 = OrSet('2')
+  
+  var op1 = []
+  var op2 = []
+  
+  set1.on('op', op => {
+    op1.push(op)
+  })
+  set2.on('op', op => {
+    op2.push(op)
+  })
+  
+  set1.add('a')
+  set1.add('b')
+  set1.delete('b')
+  
+  set2.add('a')
+  set2.delete('a')
+  set2.add('d')
+
+  set1.receive(op2[0])
+  set1.receive(op2.shift())
+  set1.receive(op2[0])
+  set1.receive(op2[0])
+  set1.receive(op2.shift())
+  set1.receive(op2[0])
+  set1.receive(op2.shift())
+
+  set2.receive(op1[0])
+  set2.receive(op1.shift())
+  set2.receive(op1[0])
+  set2.receive(op1[0])
+  set2.receive(op1.shift())
+  set2.receive(op1.shift())
+
+  t.assert(set1.values().indexOf('a') !== -1, 'a in set1')
+  t.assert(set2.values().indexOf('a') !== -1, 'a in set2')
+  
+  t.equals(set1.size(), 2)
+  t.equals(set2.size(), 2)
+  t.end()
+})
 
 test('test random operations and delays', function (t) {
   var set1 = OrSet('1')
@@ -191,37 +273,46 @@ test('test random operations and delays', function (t) {
   // pushes to queue, then after a random time, takes the top off the queue
   // like all CRDTs, relatively causality between sites needs to be preserved
   set1.on('op', op => {
-    op1.push(op)
-    waiting++
-    afterRandomDelay(() => {
-      var opn = op1.shift()
-      set2.receive(opn)
-      set3.receive(opn)
-      waiting--
-      checkIfDone()
-    })
+    for (var i=0; i<3; i++) { // more-than-once
+      op1.push(op)
+      waiting++
+
+      afterRandomDelay(() => {
+        var opn = op1.pop() // out of order
+        set2.receive(opn)
+        set3.receive(opn)
+        waiting--
+        checkIfDone()
+      })
+    }
   })
   set2.on('op', op => {
-    op2.push(op)
-    waiting++
-    afterRandomDelay(() => {
-      var opn = op2.shift()
-      set1.receive(opn)
-      set3.receive(opn)
-      waiting--
-      checkIfDone()
-    })
+    for (var i=0; i<3; i++) { // more-than-once
+      op2.push(op)
+      waiting++
+
+      afterRandomDelay(() => {
+        var opn = op2.pop() // out of order
+        set1.receive(opn)
+        set3.receive(opn)
+        waiting--
+        checkIfDone()
+      })
+    }
   })
   set3.on('op', op => {
-    op3.push(op)
-    waiting++
-    afterRandomDelay(() => {
-      var opn = op3.shift()
-      set2.receive(opn)
-      set1.receive(opn)
-      waiting--
-      checkIfDone()
-    })
+    for (var i=0; i<3; i++) { // more-than-once
+      op3.push(op)
+      waiting++
+      
+      afterRandomDelay(() => {
+        var opn = op3.pop() // out of order
+        set2.receive(opn)
+        set1.receive(opn)
+        waiting--
+        checkIfDone()
+      })
+    }
   })
   
   var obj = {}
