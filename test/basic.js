@@ -285,13 +285,8 @@ test('test state transfer', function (t) {
 })
 
 test('test random operations and delays', function (t) {
-  var set1 = OrSet('1')
-  var set2 = OrSet('2')
-  var set3 = OrSet('3')
-  
-  var op1 = []
-  var op2 = []
-  var op3 = []
+  var sets = [OrSet('1'), OrSet('2'), OrSet('3')]
+  var ops = [[], [], []]
   
   var waiting = 0
   
@@ -301,83 +296,52 @@ test('test random operations and delays', function (t) {
   
   // pushes to queue, then after a random time, takes the top off the queue
   // like all CRDTs, relatively causality between sites needs to be preserved
-  set1.on('op', op => {
-    for (var i=0; i<3; i++) { // more-than-once
-      op1.push(op)
-      waiting++
+  for (var s=0; s<3; s++) {
+    ;((s) => {
+      sets[s].on('op', op => {
+        var repeats = 1 + Math.floor(Math.random() * 3)
+        for (var i=0; i<repeats; i++) { // more-than-once
+          ops[s].push(op)
+          waiting++
 
-      afterRandomDelay(() => {
-        var opn = op1.pop() // out of order
-        set2.receive(opn)
-        set3.receive(opn)
-        waiting--
-        checkIfDone()
+          afterRandomDelay(() => {
+            var rnd = Math.floor(ops[s].length * Math.random())
+            var opn = ops[s].splice(rnd, 1)[0] // out of order
+            for (var s2=0; s2<3; s2++) {
+              if (s2 == s) continue
+              sets[s2].receive(opn)
+            }
+            waiting--
+            checkIfDone()
+          })
+        }
       })
-    }
-  })
-  set2.on('op', op => {
-    for (var i=0; i<3; i++) { // more-than-once
-      op2.push(op)
-      waiting++
-
-      afterRandomDelay(() => {
-        var opn = op2.pop() // out of order
-        set1.receive(opn)
-        set3.receive(opn)
-        waiting--
-        checkIfDone()
-      })
-    }
-  })
-  set3.on('op', op => {
-    for (var i=0; i<3; i++) { // more-than-once
-      op3.push(op)
-      waiting++
-      
-      afterRandomDelay(() => {
-        var opn = op3.pop() // out of order
-        set2.receive(opn)
-        set1.receive(opn)
-        waiting--
-        checkIfDone()
-      })
-    }
-  })
+    })(s)
+  }
   
-  var obj = {}
-  obj.set1 = set1
-  obj.set2 = set2
-  obj.set3 = set3
   for (var i=0; i<300; i++) {
-    var site = 1 + Math.floor(Math.random() * 3)
+    var site = Math.floor(Math.random() * 3)
     var op = ['add', 'delete'][Math.floor(Math.random() * 2)]
     var value = Math.random()
     
-    obj['set'+site][op](value)
+    sets[site][op](value)
   }
   
   function checkIfDone () {
     if (waiting > 0) return
-    
-    var size = set1.size()
-    t.equals(set2.size(), size)
-    t.equals(set3.size(), size)
-    
-    set1.values().forEach((value) => {
-      t.assert(set2.values().indexOf(value) !== -1)
-      t.assert(set3.values().indexOf(value) !== -1)
+
+    sets.forEach((s1, i1) => {
+      t.equals(Object.keys(s1._tombstones).length, 0, 'no tombstone leaks')
+
+      sets.forEach((s2, i2) => {
+        if (i1 === i2) return
+        t.equals(s1.size(), s2.size(), 'equal sized maps')
+        s1.values().forEach((value) => {
+          t.assert(s2.values().indexOf(value) !== -1, 'value is contained in other map')
+        })
+      })
     })
-    
-    set2.values().forEach((value) => {
-      t.assert(set1.values().indexOf(value) !== -1)
-      t.assert(set3.values().indexOf(value) !== -1)
-    })
-    
-    set3.values().forEach((value) => {
-      t.assert(set2.values().indexOf(value) !== -1)
-      t.assert(set1.values().indexOf(value) !== -1)
-    })
-    
+
     t.end()
   }
 })
