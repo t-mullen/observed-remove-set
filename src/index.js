@@ -3,7 +3,7 @@ var inherits = require('inherits')
 
 inherits(OrSet, EventEmitter)
 
-function OrSet (site, opts) {
+function OrSet(site, opts) {
   if (!(this instanceof OrSet)) return new OrSet(site, opts)
 
   EventEmitter.call(this)
@@ -31,10 +31,11 @@ OrSet.prototype.setState = function (state) {
 }
 
 OrSet.prototype.getState = function () {
+  const localCausality = [[this._site, { counter: this._counter + 1, queue: [] }]]
   return this._serialize({
     references: Array.from(this._references.entries()),
     tombstones: Array.from(this._tombstones.entries()),
-    causality: Array.from(this._causality.entries())
+    causality: Array.from(this._causality.entries()).concat(localCausality)
   })
 }
 
@@ -176,13 +177,13 @@ OrSet._difference = function (a, b) {
   })
 }
 
-function AddOperation ({ uuid, element }) {
+function AddOperation({ uuid, element }) {
   this.type = 'add'
   this.uuid = uuid
   this.element = element
 }
 
-function DeleteOperation ({ uuid, element, deletedReferences }) {
+function DeleteOperation({ uuid, element, deletedReferences }) {
   this.type = 'delete'
   this.uuid = uuid // uuid here isn't needed for CRDT, used for causality
   this.element = element
