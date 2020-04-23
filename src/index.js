@@ -28,6 +28,7 @@ OrSet.prototype.setState = function (state) {
   this._references = new Map(parsed.references)
   this._tombstones = new Map(parsed.tombstones)
   this._causality = new Map(parsed.causality)
+  this._causality.delete(this._site)
 }
 
 OrSet.prototype.getState = function () {
