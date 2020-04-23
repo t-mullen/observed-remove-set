@@ -4,75 +4,67 @@ var inherits = require('inherits')
 inherits(OrSet, EventEmitter)
 
 function OrSet (site, opts) {
-  var self = this
-  if (!(self instanceof OrSet)) return new OrSet(site, opts)
+  if (!(this instanceof OrSet)) return new OrSet(site, opts)
 
   EventEmitter.call(this)
 
   opts = opts || {}
 
-  self._serialize = opts.serialize || JSON.stringify
-  self._parse = opts.parse || JSON.parse
+  this._serialize = opts.serialize || JSON.stringify
+  this._parse = opts.parse || JSON.parse
 
-  self._references = {} // observed
-  self._tombstones = {} // remove
-  self._causality = {}
+  this._references = new Map() // observed
+  this._tombstones = new Map() // remove
+  this._causality = new Map()
 
-  self._site = site
-  self._counter = 0
+  this._site = site
+  this._counter = 0
 
-  if (opts.state) self.setState(opts.state)
+  if (opts.state) this.setState(opts.state)
 }
 
 OrSet.prototype.setState = function (state) {
-  var self = this
-
-  var parsed = self._parse(state)
-  self._references = parsed.references
-  self._tombstones = parsed.tombstones
-  self._causality = parsed.causality
+  var parsed = this._parse(state)
+  this._references = new Map(parsed.references)
+  this._tombstones = new Map(parsed.tombstones)
+  this._causality = new Map(parsed.causality)
 }
 
 OrSet.prototype.getState = function () {
-  var self = this
-
-  return self._serialize({
-    references: self._references,
-    tombstones: self._tombstones,
-    causality: self._causality
+  return this._serialize({
+    references: Array.from(this._references.entries()),
+    tombstones: Array.from(this._tombstones.entries()),
+    causality: Array.from(this._causality.entries())
   })
 }
 
 OrSet.prototype._unique = function () {
-  var self = this
-
-  self._counter++
-  return [self._counter, self._site]
+  this._counter++
+  return [this._counter, this._site]
 }
 
 OrSet.prototype.receive = function (op) {
-  var self = this
-
-  var site = op.uuid[1]
-  var causality = self._causality[site] = self._causality[site] || { counter: 1, queue: [] }
+  const site = op.uuid[1]
+  this._causality.set(site, this._causality.get(site) || { counter: 1, queue: [] })
+  const causality = this._causality.get(site)
 
   if (op.uuid[0] > causality.counter) {
     causality.queue.push(op)
   } else if (op.uuid[0] === causality.counter) {
     if (op.type === 'add') {
-      self._remoteAdd(op.element, op.uuid)
+      this._remoteAdd(op.element, op.uuid)
     } else {
-      self._remoteDelete(op.element, op.deletedReferences)
+      this._remoteDelete(op.element, op.deletedReferences)
     }
 
     causality.counter++ // increment causuality counter
 
     // check if any other operations are now "causually ready"
-    for (var i = 0; i < causality.queue.length; i++) {
-      var qop = causality.queue[i]
+    for (let i = 0; i < causality.queue.length; i++) {
+      const qop = causality.queue[i]
       if (qop.uuid[0] === causality.counter) {
         causality.queue.splice(i, 1)
-        self.receive(qop)
+        this.receive(qop)
         return
       }
     }
@@ -81,118 +73,97 @@ OrSet.prototype.receive = function (op) {
 
 // O(1)
 OrSet.prototype.add = function (element) {
-  var self = this
+  element = this._serialize(element)
 
-  element = self._serialize(element)
+  const uuid = this._unique()
+  this._references.set(element, this._references.get(element) || [])
+  this._references.get(element).push(uuid)
 
-  var uuid = self._unique()
-  self._references[element] = self._references[element] || []
-  self._references[element].push(uuid)
+  this.emit('op', new AddOperation({ element, uuid }))
 
-  self.emit('op', new AddOperation({ element, uuid }))
-
-  self._garbageCollection(element)
+  this._garbageCollection(element)
 }
 
 // O(1)
 OrSet.prototype._remoteAdd = function (element, uuid) {
-  var self = this
+  this._references.set(element, this._references.get(element) || [])
+  this._references.get(element).push(uuid)
 
-  self._references[element] = self._references[element] || []
-  self._references[element].push(uuid)
+  if (this._references.get(element).length === 1) this.emit('add', this._parse(element))
 
-  if (self._references[element].length === 1) self.emit('add', self._parse(element))
-
-  self._garbageCollection(element)
+  this._garbageCollection(element)
 }
 
 // integrate and clear any tombstones
 OrSet.prototype._garbageCollection = function (element) {
-  var self = this
-
-  if (!self._tombstones[element]) return
-  var tombstones = self._tombstones[element]
-  self._tombstones[element] = []
-  self._remoteDelete(element, tombstones)
+  if (!this._tombstones.has(element)) return
+  const tombstones = this._tombstones.get(element)
+  this._tombstones.set(element, [])
+  this._remoteDelete(element, tombstones)
 }
 
 // O(1)
 OrSet.prototype.delete = function (element) {
-  var self = this
+  element = this._serialize(element)
 
-  element = self._serialize(element)
+  if (!this._references.has(element)) return // can't delete something we don't have
 
-  if (!self._references[element]) return // can't delete something we don't have
+  const deletedReferences = this._references.get(element)
+  this._references.delete(element)
 
-  var deletedReferences = self._references[element]
-  delete self._references[element]
+  const uuid = this._unique()
 
-  var uuid = self._unique()
-
-  self.emit('op', new DeleteOperation({ uuid, element, deletedReferences }))
+  this.emit('op', new DeleteOperation({ uuid, element, deletedReferences }))
 }
 
 OrSet.prototype._addTombstones = function (element, tombstones) {
-  var self = this
-
   if (tombstones.length > 0) {
-    if (self._tombstones[element]) {
-      self._tombstones[element] = self._tombstones[element].concat(tombstones)
+    if (this._tombstones.has(element)) {
+      this._tombstones.set(element, this._tombstones.get(element).concat(tombstones))
     } else {
-      self._tombstones[element] = tombstones
+      this._tombstones.set(element, tombstones)
     }
   }
 }
 
 // O(nm): n = number of adds, m = removed adds (both remain low)
 OrSet.prototype._remoteDelete = function (element, deletedReferences) {
-  var self = this
-
   // find all the deletes for which we cannot integrate yet, mark with a tombstone
-  if (!self._references[element]) {
-    self._addTombstones(element, deletedReferences)
+  if (!this._references.has(element)) {
+    this._addTombstones(element, deletedReferences)
     return
   }
 
-  var tombstones = OrSet._difference(deletedReferences, self._references[element])
-  self._addTombstones(element, tombstones)
+  const tombstones = OrSet._difference(deletedReferences, this._references.get(element))
+  this._addTombstones(element, tombstones)
 
   // remove all pairs that the remote replica has seen
-  self._references[element] = OrSet._difference(self._references[element], deletedReferences)
-  if (self._references[element].length > 0) return // element is still there
+  this._references.set(element, OrSet._difference(this._references.get(element), deletedReferences))
+  if (this._references.get(element).length > 0) return // element is still there
 
-  delete self._references[element]
-  self.emit('delete', self._parse(element))
+  this._references.delete(element)
+  this.emit('delete', this._parse(element))
 }
 
 // O(1)
 OrSet.prototype.has = function (element) {
-  var self = this
-
-  element = self._serialize(element)
-
-  return !!self._references[element]
+  element = this._serialize(element)
+  return this._references.has(element)
 }
 
 // O(1)
 OrSet.prototype.size = function () {
-  var self = this
-
-  return Object.keys(self._references).length
+  return this._references.size
 }
 
 // O(n) : n = number of elements in set
 OrSet.prototype.values = function () {
-  var self = this
-
-  return Object.keys(self._references).map((element) => self._parse(element))
+  return Array.from(this._references.keys()).map((element) => this._parse(element))
 }
 
 // O(n) : n = number of elements in set
 OrSet.prototype.toString = function () {
-  var self = this
-
-  return self._serialize(self.values())
+  return this._serialize(this.values())
 }
 
 // A - B
